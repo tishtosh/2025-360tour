@@ -46,7 +46,7 @@
 <body>
    
     <!-- the viewer container must have a defined size -->
-    <div id="viewer" style="width: 98vw; height: 90vh;"></div>
+    <div id="viewer" style="width: 98vw; height: 85vh;"></div>
     
      <!-- Make sure you put this AFTER Leaflet's CSS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -79,7 +79,7 @@
         //import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin';
         
         const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
-        const caption = 'lighthouse';
+        //const caption = 'lighthouse';
         const pageCaption = 'Greenlands Drive';
 
         const getGPS = ( feetx, feety, feetz ) => {
@@ -467,8 +467,8 @@
                         position: { yaw: hotspot.yaw, pitch: hotspot.pitch },
                         image: baseUrl + 'pictos/pin-blue.png',
                         //image: baseUrl + 'pictos/target.png',
-                        size: { width: 48, height: 48 },
-                        anchor: 'bottom center',
+                        size: { width: 64, height: 64 },
+                        anchor: 'center center',
                         tooltip: `Target: ${hotspot.targetNode}`,
                         data: {
                             generated: true,

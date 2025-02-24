@@ -81,10 +81,8 @@
         import { GalleryPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin@5.12.0/index.module.min.js';
         import { VirtualTourPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js';
         import { CompassPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js';
-        //import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin';
         
         const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
-        //const caption = 'lighthouse';
         const pageCaption = 'Greenlands Drive';
 
         const getGPS = ( feetx, feety, feetz ) => {
@@ -117,15 +115,6 @@
                 gps:  getGPS( 0, 0, -4 ),
                 sphereCorrection: { pan:0, tilt:0, roll:0 },
             };
-        };
-
-        const markerLight = {
-            id: 'marker-1',
-            image: baseUrl + 'pictos/pin-red.png',
-            tooltip: 'light',
-            size: { width: 16, height: 16 },
-            anchor: 'bottom center',
-            gps: [-80.155973, 25.666601, 29 + 3],
         };
 
         const floorSecond = [
@@ -411,24 +400,12 @@
         ];
 
 
-        // Create image Nodes    
-        var nodeGarden = [];
-        floorGarden.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeGarden.push( n);
-        });
-        var nodeFirst = []
-        floorFirst.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeFirst.push( n);
-        });
-        var nodeSecond = []
-        floorSecond.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeSecond.push( n);
-        });
+        // Create image Nodes for each floor
+        const nodeGarden = floorGarden.map(location => getNode3(location.id, location.image));
+        const nodeFirst = floorFirst.map(location => getNode3(location.id, location.image));
+        const nodeSecond = floorSecond.map(location => getNode3(location.id, location.image));
 
-
+        // Initialize the main 360 viewer
         const viewer = new Viewer({
             container: document.querySelector('#viewer'),
             panorama: `image1.jpg`,
@@ -445,8 +422,8 @@
                 },
                 {
                     id: 'floorGarden',
-                    content: "<B>Garden</B>",
-                    title: "<Garden",
+                    content: "Garden",
+                    title: "Garden",
                     className: 'custom-button',
                     onClick(viewer) {
                         if( nodeGarden.length > 0 ) {
@@ -457,7 +434,7 @@
                 },
                 {
                     id: 'floorFirst',
-                    content: "<B>First</B>",
+                    content: "First",
                     title: "First",
                     className: 'custom-button',
                     onClick(viewer) {
@@ -469,7 +446,7 @@
                 },
                 {
                     id: 'floorSecond',
-                    content: "<B>Second</B>",
+                    content: "Second",
                     title: "Second",
                     className: 'custom-button',
                     onClick(viewer) {
@@ -495,7 +472,6 @@
                         { yaw: '270deg' },
                     ],
                 }],
-
                 [VirtualTourPlugin, {
                     positionMode: 'gps',
                     renderMode: '3d',
@@ -510,18 +486,15 @@
         const markersPlugin = viewer.getPlugin(MarkersPlugin);
         const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
 
+        // Reload new markers when the node (the picture being displayed) changes
         virtualTourPlugin.addEventListener('node-changed', ({ node }) => {
-            // Clear existing markers
-            markersPlugin.clearMarkers();
-
-            // Add markers from floorHotspots
+            markersPlugin.clearMarkers();       
             floorHotspots.forEach(hotspot => {
                 if (hotspot.node === node.id) {
                     markersPlugin.addMarker({
                         id: '#' + Math.random(),
                         position: { yaw: hotspot.yaw, pitch: hotspot.pitch },
-                        image: baseUrl + 'pictos/pin-blue.png',
-                        //image: baseUrl + 'pictos/target.png',
+                        image: baseUrl + 'pictos/pin-blue.png',     //  'pictos/target.png',
                         size: { width: 64, height: 64 },
                         anchor: 'center center',
                         tooltip: `${hotspot.targetNode}`,
@@ -535,9 +508,7 @@
         });
 
 
-        /**
-         * Create a new marker when the user clicks somewhere
-         */
+        // EDITING MODE - create a new marker when the user clicks somewhere
         viewer.addEventListener('click', ({ data }) => {
             if (isEditingMode && !data.rightclick) {
                 const s = `${data.yaw} ${data.pitch}`
@@ -589,44 +560,37 @@
             }
         });
 
-    // Add event listener to export button
-    document.getElementById('exportButton').addEventListener('click', () => {
-        //const json = JSON.stringify(floorGarden, null, 2);
-        const json = JSON.stringify(floorGarden );
-        console.log(json);
-    });
-
-    // Add event listener to export button
-    document.getElementById('exportHotspots').addEventListener('click', () => {
-        const currentNode = virtualTourPlugin.getCurrentNode();
-        const ms = markersPlugin.getMarkers();
-        var index = 1
-        ms.forEach( m => {
-            console.log(`{ node: \"${currentNode.id}\", pitch: ${m.config.position.pitch}, yaw: ${m.config.position.yaw}, targetNode: 1 },`);
-            index += 1;
+        // Add event listener to export button
+        document.getElementById('exportButton').addEventListener('click', () => {
+            //const json = JSON.stringify(floorGarden, null, 2);
+            const json = JSON.stringify(floorGarden );
+            console.log(json);
         });
-    });
 
-    let isEditingMode = false;
+        // Add event listener to export button
+        document.getElementById('exportHotspots').addEventListener('click', () => {
+            const currentNode = virtualTourPlugin.getCurrentNode();
+            const ms = markersPlugin.getMarkers();
+            var index = 1
+            ms.forEach( m => {
+                console.log(`{ node: \"${currentNode.id}\", pitch: ${m.config.position.pitch}, yaw: ${m.config.position.yaw}, targetNode: 1 },`);
+                index += 1;
+            });
+        });
 
-    // Add event listener to the checkbox
-    document.getElementById('editMode').addEventListener('change', (event) => {
-        isEditingMode = event.target.checked;
-    });
+        let isEditingMode = false;
 
+        // Add event listener to the checkbox
+        document.getElementById('editMode').addEventListener('change', (event) => {
+            isEditingMode = event.target.checked;
+        });
     </script>
 
-
-
-<!-- Export button 
- -->
-<button id="exportButton">Export dynNode as JSON</button>
-<button id="exportHotspots">Export hotSpots</button>
-<label for="editMode">edit mode</label>
-<input type="checkbox" id="editMode">
-<input type="text" id="editSummary" style="width:800px" value="">
-<br>
-
+    <button id="exportButton">Export dynNode as JSON</button>
+    <button id="exportHotspots">Export hotSpots</button>
+    <label for="editMode">edit mode</label>
+    <input type="checkbox" id="editMode">
+    <input type="text" id="editSummary" style="width:800px" value="">
 
 </body>
 </html>

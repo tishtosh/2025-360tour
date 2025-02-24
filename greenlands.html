@@ -506,62 +506,33 @@
                 const editSummary = document.getElementById('editSummary');
                 editSummary.value = `{ node: \"${currentNode.id}\", pitch: ${newMarker.position.pitch}, yaw: ${newMarker.position.yaw}, targetNode: 1 },`;
             }
-
-            /**
-             * Delete a generated marker when the user double-clicks on it
-             * Or change the image if the user right-clicks on it
-             */
-            markersPlugin.addEventListener('select-marker', ({ marker, click, doubleClick, rightClick }) => {
-                if (marker.data?.generated) {
-                    if (isEditingMode && doubleClick) {
-                        markersPlugin.removeMarker(marker);
-                    } else if (isEditingMode && rightClick) {
-                        markersPlugin.updateMarker({
-                            id: marker.id,
-                            image: baseUrl + 'pictos/pin-blue.png',
-                        });
-                        const currentNode = virtualTourPlugin.getCurrentNode();
-                        console.log( currentNode.id, marker.config.position.yaw, marker)
-                    }
-                }
-                if( !isEditingMode && click ) {
-                    console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-                if( !isEditingMode && doubleClick ) {
-                    console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-                if( !isEditingMode && rightClick ) {
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-            });
-
-
-        });
-
-
-        viewer.addEventListener('click', ({ data }) => {
-            console.log(`${data.rightclick ? 'right ' : ''}clicked at yaw: ${data.yaw} pitch: ${data.pitch}`);
-            // Log the pan value from sphereCorrection
-            nodeGarden.forEach(node => {
-                console.log(`Node ${node.id} pan: ${node.sphereCorrection.pan} roll: ${node.roll}`);
-     
-            });
-
         });
         
-
-        viewer.addEventListener('position-updated', ({ position }) => {
-            //console.log(`new yaw: ${position.yaw} pitch: ${position.pitch} x ${position.offsetX} y ${position.offsetY}` );
+        /**
+         * Delete a generated marker when the user double-clicks on it
+         * Or change the image if the user right-clicks on it
+         */
+        markersPlugin.addEventListener('select-marker', ({ marker, click, doubleClick, rightClick }) => {
+            if (marker.data?.generated) {
+                if (isEditingMode && doubleClick) {
+                    markersPlugin.removeMarker(marker);
+                } else if (isEditingMode && rightClick) {
+                    markersPlugin.updateMarker({
+                        id: marker.id,
+                        image: baseUrl + 'pictos/pin-blue.png',
+                    });
+                    const currentNode = virtualTourPlugin.getCurrentNode();
+                    console.log( currentNode.id, marker.config.position.yaw, marker)
+                }
+            }
+            
+            if( !isEditingMode && !doubleClick ) {
+                console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
+                if ( marker.data.targetNode ) {
+                    virtualTourPlugin.setCurrentNode( marker.data.targetNode );
+                }
+            }
         });
-        
 
     // Add event listener to export button
     document.getElementById('exportButton').addEventListener('click', () => {

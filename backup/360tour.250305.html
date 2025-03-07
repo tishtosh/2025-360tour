@@ -147,17 +147,15 @@
                 configData.length = 0; // Clear the existing configData
                 Array.prototype.push.apply(configData, loadedConfigData);
                 console.log("Config data loaded successfully from URL:", configData);
-                nodeData = [ // HARDWIRED for 3 floors
+                nodeData = [ 
                     configData[0].nodes.map(location => getNode3(location.id, location.image)),
                     configData[1].nodes.map(location => getNode3(location.id, location.image)),
                     configData[2].nodes.map(location => getNode3(location.id, location.image))
                 ];
                 if( configData[0].nodes.length > 0 ) {
-                    selectedFloor = 0;
+                    floorHotspots = configData[0].hotspots;
                     virtualTourPlugin.setNodes( nodeData[0] );            
                 }
-                setNavigationBar( );
-
             })
             .catch(error => {
                 const e = "Error loading configuration.\n" + error.name + "\n" + error.message;
@@ -167,21 +165,20 @@
         }
         
         //Format of the JSON file
-        // [{ id:       "Garden", 
-        //      nodes:    [ { "id": "Greenhouse", "image": "xxx.jpg" } ], 
-        //      hotspots: [  { "node": "Greenhouse", "pitch": -0.01, "yaw": 6.1, "targetNode": "Bluebucket" } ] } 
-        //  { id: "First", nodes: floorFirst, hotspots: floorFirst_hotspots },
-        //  { id: "Second", nodes: floorSecond, hotspots: floorSecond_hotspots }
-        // ]
-        
-        // Selected floor
-        var selectedFloor = -1;
-        
+        //const configData = [
+        //    { id: "Garden", nodes: floorGarden, hotspots: floorGarden_hotspots },
+        //    { id: "First", nodes: floorFirst, hotspots: floorFirst_hotspots },
+        //    { id: "Second", nodes: floorSecond, hotspots: floorSecond_hotspots }
+        //];    
+
         // Configuration data for each floor
         let  configData = [ ];
         let  nodeData = [ ];
         
-        // Unique identifier for new markers
+        // Selected floor
+        var floorHotspots = []  
+
+        // New marker identifier until renamed
         var newMarkerId = 100;
         
         // Create an input element for file selection
@@ -189,7 +186,7 @@
         fileinputElement.type = 'file';
         fileinputElement.accept = '.json';
 
-        // FILE load event listener to handle 
+        // Add an event listener to handle file selection for upload 
         fileinputElement.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -198,14 +195,82 @@
             }
         });
 
-        // 
-        // MAIN 360 degree viewer
-        //
+        // Main 360 viewer
         const viewer = new Viewer({
             container: document.querySelector('#viewer'),
             panorama: `image1.jpg`,
             caption: pageCaption,
-            navbar:  [], 
+
+            navbar: [
+                'zoom',
+                'gallery',
+                {
+                    id: 'fileload',
+                    content: "<button id='load'>Load</button>",
+                    title: 'load',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        fileinputElement.click();
+                    },
+                },
+                {
+                    id: 'save',
+                    content: "<button id='save'>Save</button>",
+                    title: 'Save',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        saveConfigData();
+                    },
+                },
+               
+                {
+                      id: 'floorDescription',
+                        content: "Choose a floor", 
+                        title: 'choose',
+                        className: 'custom-button',
+                },
+                // TODO fix to dynamically define based on loaded json floors
+                {
+                    id: 'floorGarden',
+                    content: "Garden", // configData[0].id,
+                    title: "Garden",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[0].nodes.length > 0 ) {
+                            floorHotspots = configData[0].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[0] );            
+                        }
+                    },
+                },
+                {
+                    id: 'floorFirst',
+                    content: "First",   // configData[1].id,
+                    title: "First",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[1].nodes.length > 0 ) {
+                            floorHotspots = configData[1].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[1] );  
+                        }
+                   },
+                },
+                {
+                    id: 'floorSecond',
+                    content: "Second", // configData[2].id,
+                    title: "Second",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[2].nodes.length > 0 ) {
+                            floorHotspots = configData[2].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[2] );
+                        }
+                    },
+                },
+                'caption',
+                'description',
+                'fullscreen',
+            ],
+
             plugins: [
                 [MarkersPlugin, {} ],
                 [GalleryPlugin, {}],
@@ -224,93 +289,27 @@
             ],
         });
 
-        // 
-        // GLOBALS 
-        //
-        let selectedNode = null;
-        let selectedMarker = null;
-        let isEditingMode = false;  // Allows create, delete and edit of hotstpos
-    
+        // Remember the markers and tour plugins
         const markersPlugin = viewer.getPlugin(MarkersPlugin);
         markersPlugin.setOptions({
             clickEventOnMarker: true,
         });
+
         const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
-  
+
         // Load default configuration of photos and click nodes
+        //const configDataUrl = 'greenlands.json';
         const configDataUrl = 'greenlands-short.json';
         await loadConfigDataFromUrl(configDataUrl);
 
-  
-
-        //
-        // NAVIGATION BAR
-        //
-        function setFloor( floor ) {
-            // FLOOR change
-            selectedFloor = floor;
-            if( configData[selectedFloor].nodes.length > 0 ) {
-                virtualTourPlugin.setNodes( nodeData[selectedFloor] );            
-            }
-        }
-
-        function setNavigationBar( ) {
-            var dynnav = [];
-            dynnav.push( 'zoom' );
-            dynnav.push( 'gallery' );    
-            dynnav.push( {
-                id: 'fileload',
-                content: "<button id='load'>Load</button>",
-                title: 'Load',
-                className: 'custom-button',
-                onClick(viewer) { fileinputElement.click(); },
-            }); 
-            dynnav.push( {
-                id: 'save',
-                content: "<button id='save'>Save</button>",
-                title: 'Save',
-                className: 'custom-button',
-                onClick(viewer) { saveConfigData(); },
-            });
-            dynnav.push( {
-                id: 'floor',
-                content: "Choose a floor", 
-            });
-
-            // Create floor buttons dynamically based on configData
-            for (let i = 0; i < configData.length; i++) {
-                dynnav.push({
-                    id: configData[i].id,
-                    content: configData[i].id,
-                    title: `Choose Floor`,
-                    className: 'custom-button',
-                    onClick(viewer) { 
-                        setFloor(i); 
-                    },
-                });
-            }
-            
-            dynnav.push(  'caption' );
-            dynnav.push( 'description' );
-            dynnav.push( 'fullscreen' );
-                    
-            viewer.navbar.setButtons( dynnav );
-        }
-
-
-
-        // 
-        // NODE CHANGED reload new markers when the node (the picture being displayed) changes
-        // 
+        // Reload new markers when the node (the picture being displayed) changes
         virtualTourPlugin.addEventListener('node-changed', ({ node }) => {
             
             if( ! isEditingMode ) {
                 console.log( "node-changed", node.id );
-                selectedNode = node.id;
-                selectedMarker = null;
                 // Change to the node's marker's 
                 markersPlugin.clearMarkers();       
-                configData[selectedFloor].hotspots.forEach(hotspot => {
+                floorHotspots.forEach(hotspot => {
                     if (hotspot.node === node.id) {
                         markersPlugin.addMarker({
                             id: '#' + Math.random(),
@@ -318,11 +317,10 @@
                             image: baseUrl + 'pictos/pin-blue.png',     //  'pictos/target.png',
                             size: { width: 64, height: 64 },
                             anchor: 'center center',
-                            tooltip: hotspot.targetNode,   // name of node to navigate to
+                            tooltip: hotspot.targetNode,  // name of node to navigate to
                             data: {
-                                generated: false,     // node was not generated by user
+                                generated: true,
                                 targetNode: hotspot.targetNode,
-                                nodeId: node.id,       
                             },
                         });
                     }
@@ -330,62 +328,60 @@
             }     
         });
 
-        //
+        // Add view event listener to output all events to the console
+        viewer.addEventListener('view', (event) => {
+            console.log('View event:', event);
+        });
+
         // VIEWER events
-        //      
+
+        // EDITING MODE - create a new marker when the user clicks somewhere
+        let selectedMarker = null;
+
         viewer.addEventListener('click', ({ data }) => {
             
             if (isEditingMode && data.rightclick) {
-                // RIGHT CLICKED on empty space so DESELECT any previous edit marker and update it
+                // RIGHT CLICKED on empty space so DESELECT any previous edit marker 
                 if( selectedMarker ) {
-                    const selectedValue = tooltipGetSelected();
-                    console.log ('viewer click - DESELECTED edit marker', selectedMarker.id, selectedValue);                    
-                    
+                    console.log ('viewer click - DESELECTED edit marker', selectedMarker.id, selectedMarker.data);                    
+                    selectedMarker.data.selectedNodeId = selectedMarker.data.tooltipElement.value;
+                    console.log( "save node", selectedMarker.data.selectedNodeId );
+
                     markersPlugin.updateMarker({
                         id: selectedMarker.id,
                         image: baseUrl + 'pictos/pin-red.png',
                         data: {
-                            targetNode: selectedValue,
+                            targetNode: selectedMarker.data.selectedNodeId,
                         },
                     });
-
-                    // Update the hotspot marker with the targetNode
-                    const marker = configData[selectedFloor].hotspots.find(hotspot => hotspot.id === selectedMarker.id )
-                    marker.targetNode = selectedValue;
-
                     selectedMarker = null;
                 }
 
                 // CREATE new edit marker
                 console.log( "viewer click - new edit marker")
-            
-                const tooltip = tooltipGet( 0 ); // tooltip for new edit marker
+                // tooltip for new edit marker
+                const tooltipElement = tooltipStub();
+
+                const s = `${data.yaw} ${data.pitch}`;
                 const mId = '#' + newMarkerId.toString();
                 const newMarker = {
                     id: mId,
                     position: { yaw: data.yaw, pitch: data.pitch },
                     image: baseUrl + 'pictos/pin-blue.png',
-                    size: { width: 48, height: 48 },
+                    size: { width: 32, height: 32 },
                     anchor: 'bottom center',
                     tooltip: {
-                        content: "Select target location", 
+                        content: tooltipElement.outerHTML, 
+                        className: 'custom-tooltip',
                         position: 'top',
+                        trigger: 'click',
                     },
                     data: {
                         generated: true,
-                        targetNode: "-unassigned-",
+                        tooltipElement: tooltipElement,
+                        selectedNodeId: "-unassigned-",
                     },
                 };
-                tooltip.value = 0;  // default
-
-                // Add new hotspot marker
-                configData[selectedFloor].hotspots.push({
-                    id: newMarker.id,   // not persistent used for editing
-                    node: selectedNode, // node that hotpost is attached to
-                    pitch: newMarker.position.pitch,
-                    yaw: newMarker.position.yaw,
-                    targetNode: newMarker.data.targetNode
-                });
 
                 // SELECTED new edit marker
                 selectedMarker = newMarker;
@@ -397,74 +393,62 @@
         });
         
 
-        //
         // MARKER events
-        // 
         markersPlugin.addEventListener('enter-marker', ({ marker }) => {
             console.log('markers enter-marker', marker.id, marker.data  );
+    
         });
         
         markersPlugin.addEventListener('select-marker', ({ marker, click, doubleClick, rightClick }) => {
 
             if ( isEditingMode ) {
-               
+                // SELECTED edit marker so DESELECT previous edit marker
                 if( selectedMarker == marker) {
-                    // SELECTED marker already selected
                     console.log ('markers select-marker - same marker', selectedMarker.id);
+                    // Save the selected next node 
+                    const selectedItem = tooltipGetSelected();
+                    console.log("markers select-marker - DESELECT", selectedMarker.id, selectedMarker.data, selectedItem );
                 }
-                else if (marker.data?.generated == false) {
-                    // SELECTED marker not created by user
-                    console.log ('markers select-marker - not user generated', marker.id);
-                }
-                else {  
-                    // DESELECTED any previously selected marker and update the targetNode
-                    if ( selectedMarker && selectedMarker.data?.generated) {
-                        const selectedValue = tooltipGetSelected();
-                        console.log("markers select-marker - DESELECT", selectedMarker.id, selectedValue);                        
+                else {
+                    // PREVIOUSLY SELECTED marker so DESELECT
+                    if ( selectedMarker ) {
+                        // TODO save selected next node for marker being deselected
+                        const selectedItem = tooltipGetSelected();
+                        console.log("markers select-marker - DESELECT", selectedMarker.id, selectedMarker.data, selectedItem );
+                        
                         markersPlugin.updateMarker({
                             id: selectedMarker.id,
                             image: baseUrl + 'pictos/pin-red.png', // back to DESELECTED
                             content: selectedMarker.id,
                             data: {
-                                targetNode: selectedValue,
+                                targetNode: selectedItem,
                             },
                         });
-
-                        // Update hotspot marker with targetNode
-                        const marker = configData[selectedFloor].hotspots.find(hotspot => hotspot.id === selectedMarker.id )
-                        marker.targetNode = selectedValue;
-
                     }
 
                     // HIGHLIGHT new SELECTED market
-                    selectedMarker = marker;
                     console.log("markers select-marker - SELECT", marker.id, marker.data );
+                    selectedMarker = marker;
+                    const tooltipHTML = tooltipGetHTML( marker.data.targetNode );
                     
-                    const tooltip = tooltipGet( marker.data.targetNode );                   
                     markersPlugin.updateMarker({
                         id: selectedMarker.id,
                         image: baseUrl + 'pictos/pin-blue.png',
-                        content: selectedMarker.nodeId,  
+                        content: selectedMarker.nodeId, // tooltip is node ID   
                         tooltip: {
-                            content:  marker.data.targetNode, 
+                            content: tooltipHTML,
+                            className: 'custom-tooltip',
                             position: 'top',
+                            //trigger: 'click',
                         },
-                    });
-                    tooltip.value = marker.data.targetNode;       
-
+                    });                    
                 }
             }
 
             if (marker.data?.generated) {
 
                 if (isEditingMode && doubleClick) {
-                    // DELETE the doubleclicked marker and remove from hotspots structure
-                    markersPlugin.removeMarker( marker );                    
-                    configData[selectedFloor].hotspots = configData[selectedFloor].hotspots.filter(hotspot => hotspot.id !== marker.id);
-                    if ( selectedMarker == marker) {
-                        selectedMarker = null;
-                    }
-                    
+                    markersPlugin.removeMarker(marker);
                 } else if (isEditingMode && rightClick) {
                     console.log( "markers select-marker right click to SELECTED");
                     selectedMarker = marker
@@ -472,6 +456,8 @@
                         id: marker.id,
                         image: baseUrl + 'pictos/pin-blue.png',
                     });
+                    //const currentNode = virtualTourPlugin.getCurrentNode();
+                    //console.log( currentNode.id, marker.config.position.yaw, marker)
                 }
             }
             
@@ -496,43 +482,47 @@
         }
 
         // generate HTML for tooltip listbox of all possible nodes
-        function tooltipGet( targetNodeId = null)  {
-            const tooltip = tooltipStub();
-            tooltip.innerHTML = ""; // reset content
-
-            // Add options for possible target nodes
+        function tooltipGetHTML( selectedNodeId = null)  {
             const optionValues = configData[0].nodes.map(node => node.id);
+            let selectElement = document.getElementById('tooltip-content-list'); // Dynamic list of node names
+            if( !selectElement ) {
+                console.log( "no tooltip-content-list in HTML - gemerate it");
+                return;
+            }
+            // Reset options
+            selectElement.innerHTML = ""; // reset content
+
+            // Add options for possible destination nodes
             optionValues.forEach(value => {
                 const option = document.createElement('option');
                 option.value = value;
                 option.textContent = value;
-                tooltip.appendChild(option);
+                selectElement.appendChild(option);
             });
 
-            // Set the current target node
-            if( targetNodeId ) {
-                tooltip.value = targetNodeId;   
+            // Set the current next node
+            if( selectedNodeId ) {
+                selectElement.value = selectedNodeId;
+                console.log( "tooltipGetHTML set value to", selectElement.value );
             }
-            else {
-                tooltip.selectedItem = 0;
-            }
-            return tooltip;
+ 
+            console.log( "tooltipGetHTML", selectElement.value, selectElement.outerHTML );
+            return selectElement.outerHTML;
         }
 
         // Get the HTML tooltip listbox selected item`
         function tooltipGetSelected( ) {
             const selectElement = document.getElementById('tooltip-content-list'); 
             if( selectElement ) {
-                //console.log( "tooltipGetSelected ", selectElement.value );
                 return selectElement.value;
             }
             return null;
         }
 
-        
-        // EXPORT configData to a JSON file and download it
+      
+        ///
+        // Subroutine to export configData to a JSON file and download it
         function saveConfigData() {
-            
             const formattedConfigData = configData.map(section => {
                 return {
                     id: section.id,
@@ -558,17 +548,14 @@
             downloadAnchorNode.remove();
         }
 
-        //
-        // DOCUMENT
-        //
-
-        // Event listener for export button
+        // Add event listener to export button
         document.getElementById('exportButton').addEventListener('click', () => {
+            //const json = JSON.stringify(floorGarden, null, 2);
             const json = JSON.stringify(floorGarden );
             console.log(json);
         });
 
-        // Event listener to list hotspots 
+        // Add event listener to export button
         document.getElementById('exportHotspots').addEventListener('click', () => {
             const currentNode = virtualTourPlugin.getCurrentNode();
             const ms = markersPlugin.getMarkers();
@@ -578,6 +565,8 @@
                 index += 1;
             });
         });
+
+        let isEditingMode = false;
 
         // Add event listener to the checkbox
         document.getElementById('editMode').addEventListener('change', (event) => {
@@ -591,11 +580,6 @@
     <label for="editMode">edit mode</label>
     <input type="checkbox" id="editMode">
     <input type="text" id="editSummary" style="width:800px" value="">
-    <div>
-        <select id="tooltip-content-list" name="options" size="10">
-            <option value="1">Option 1</option>
-        </select>
-    </div>
-    
+
 </body>
 </html>

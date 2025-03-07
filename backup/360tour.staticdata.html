@@ -9,10 +9,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin/index.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin/index.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.1/index.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossorigin=""/>
-
 
     <style>
         .ios-button {
@@ -40,19 +36,39 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
         </style>
-        
+        <style>
+            .inputfile {
+                width: 100.1px;
+                height: 20.1px;
+                opacity: 10;
+                overflow: hidden;
+                position: absolute;
+                z-index: -1;
+            }
+
+            .inputfile + label {
+                font-size: 1.25em;
+                font-weight: 700;
+                color: white;
+                background-color: black;
+                display: inline-block;
+            }
+
+            .inputfile:focus + label,
+            .inputfile + label:hover {
+                background-color: red;
+            }
+
+            html {
+                font-family: sans-serif;
+            }
+        </style> 
 </head>
 
 <body>
-   
     <!-- the viewer container must have a defined size -->
     <div id="viewer" style="width: 98vw; height: 85vh;"></div>
     
-     <!-- Make sure you put this AFTER Leaflet's CSS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""></script>
-
     <script type="importmap">
         {
             "imports": {            
@@ -61,7 +77,6 @@
                 "@photo-sphere-viewer/markers-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.12.0/index.module.min.js",
                 "@photo-sphere-viewer/gallery-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin@5.12.0/index.module.min.js",
                 "@photo-sphere-viewer/virtual-tour-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js",
-                "@photo-sphere-viewer/plan-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/plan-plugin@5.12.0/index.module.min.js",
                 "@photo-sphere-viewer/compass-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js"
             }
         }
@@ -110,17 +125,9 @@
                 gps:  getGPS( 0, 0, -4 ),
                 sphereCorrection: { pan:0, tilt:0, roll:0 },
             };
-        };
+        }
 
-        const markerLight = {
-            id: 'marker-1',
-            image: baseUrl + 'pictos/pin-red.png',
-            tooltip: 'light',
-            size: { width: 16, height: 16 },
-            anchor: 'bottom center',
-            gps: [-80.155973, 25.666601, 29 + 3],
-        };
-
+        // DATA - moved to load from JSON file
         const floorSecond = [
             { id: "Hall-main", image: "images-second/101553.jpg" },
             { id: "Back-bedroom", image: "images-second/101419.jpg" },
@@ -403,29 +410,99 @@
             { node: "Patio-window", pitch: -0.25539266800585114, yaw: 4.119284893421629, targetNode: "Planters" }
         ];
 
+ 
+        //const configData = [
+        //    { id: "Garden", nodes: floorGarden, hotspots: floorGarden_hotspots },
+        //    { id: "First", nodes: floorFirst, hotspots: floorFirst_hotspots },
+        //    { id: "Second", nodes: floorSecond, hotspots: floorSecond_hotspots }
+        //];    
 
-        // Create image Nodes    
-        var nodeGarden = [];
-        floorGarden.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeGarden.push( n);
-        });
-        var nodeFirst = []
-        floorFirst.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeFirst.push( n);
-        });
-        var nodeSecond = []
-        floorSecond.forEach(location => {
-            const n = getNode3(location.id, location.image)
-            nodeSecond.push( n);
-        });
+        // Configuration data for each floor
+        let  configData = [ ];
+        let  nodeData = [ ];
+
+        var floorHotspots = []  //  configData[0].hotspots;
 
 
+ 
+
+
+        // Create image Nodes for each floor
+
+        // Initialize the main 360 viewer
         const viewer = new Viewer({
             container: document.querySelector('#viewer'),
             panorama: `image1.jpg`,
             caption: pageCaption,
+
+            navbar: [
+                'zoom',
+                'gallery',
+                {
+                    id: 'fileupload',
+                    content: "<input type='file' id='loadConfigData' class='custom-button' accept='.json'>Load</input>",
+                    title: 'load',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        loadConfigData();
+                    },
+                },
+                {
+                    id: 'save',
+                    content: "<button id='save'>Save</button>",
+                    title: 'Save',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        downloadConfigData();
+                    },
+                },
+               
+                {
+                      id: 'floorDescription',
+                        content: "Choose a floor", 
+                        title: 'choose',
+                        className: 'custom-button',
+                },
+                {
+                    id: 'floorGarden',
+                    content: "Garden", // configData[0].id,
+                    title: "Garden",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[0].nodes.length > 0 ) {
+                            floorHotspots = configData[0].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[0] );            
+                        }
+                    },
+                },
+                {
+                    id: 'floorFirst',
+                    content: "First",   // configData[1].id,
+                    title: "First",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[1].nodes.length > 0 ) {
+                            floorHotspots = configData[1].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[1] );  
+                        }
+                   },
+                },
+                {
+                    id: 'floorSecond',
+                    content: "Second", // configData[2].id,
+                    title: "Second",
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        if( configData[2].nodes.length > 0 ) {
+                            floorHotspots = configData[2].hotspots;
+                            virtualTourPlugin.setNodes( nodeData[2] );
+                        }
+                    },
+                },
+                'caption',
+                'description',
+                'fullscreen',
+            ],
 
             plugins: [
                 [MarkersPlugin, {} ],
@@ -438,36 +515,61 @@
                         { yaw: '270deg' },
                     ],
                 }],
-
                 [VirtualTourPlugin, {
                     positionMode: 'gps',
                     renderMode: '3d',
-                    nodes: nodeGarden,
-                    startNodeId: "Greenhouse",
+                    // nodes: [],          // nodeData[0] ,
+                    // startNodeId: "",    // "Greenhouse",
                 }]
             ],
         });
 
-        var floorHotspots = floorGarden_hotspots;
-
         const markersPlugin = viewer.getPlugin(MarkersPlugin);
+        markersPlugin.setOptions({
+            clickEventOnMarker: true,
+        });
+
         const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
 
-        virtualTourPlugin.addEventListener('node-changed', ({ node }) => {
-            // Clear existing markers
-            markersPlugin.clearMarkers();
+        // 
+        // Load photos and click nodes from JSON file 
+        // 
+        const configDataUrl = 'greenlands-short.json';
+        fetch(configDataUrl)
+        .then(response => 
+            response.json()
+        )
+        .then(loadedConfigData => {
+            configData.length = 0; // Clear the existing configData
+            Array.prototype.push.apply(configData, loadedConfigData);
+            console.log("Config data loaded successfully from URL:", configData);
+            nodeData = [ 
+                configData[0].nodes.map(location => getNode3(location.id, location.image)),
+                configData[1].nodes.map(location => getNode3(location.id, location.image)),
+                configData[2].nodes.map(location => getNode3(location.id, location.image))
+            ];
+            if( configData[0].nodes.length > 0 ) {
+                floorHotspots = configData[0].hotspots;
+                virtualTourPlugin.setNodes( nodeData[0] );            
+            }
+        })
+        .catch(error => {
+            console.error("Error loading config data from URL:", error);
+        });
 
-            // Add markers from floorHotspots
+
+        // Reload new markers when the node (the picture being displayed) changes
+        virtualTourPlugin.addEventListener('node-changed', ({ node }) => {
+            markersPlugin.clearMarkers();       
             floorHotspots.forEach(hotspot => {
                 if (hotspot.node === node.id) {
                     markersPlugin.addMarker({
                         id: '#' + Math.random(),
                         position: { yaw: hotspot.yaw, pitch: hotspot.pitch },
-                        image: baseUrl + 'pictos/pin-blue.png',
-                        //image: baseUrl + 'pictos/target.png',
+                        image: baseUrl + 'pictos/pin-blue.png',     //  'pictos/target.png',
                         size: { width: 64, height: 64 },
                         anchor: 'center center',
-                        tooltip: `Target: ${hotspot.targetNode}`,
+                        tooltip: `${hotspot.targetNode}`,
                         data: {
                             generated: true,
                             targetNode: hotspot.targetNode,
@@ -477,10 +579,12 @@
             });
         });
 
+        // Add view event listener to output all events to the console
+        viewer.addEventListener('view', (event) => {
+            console.log('View event:', event);
+        });
 
-        /**
-         * Create a new marker when the user clicks somewhere
-         */
+        // EDITING MODE - create a new marker when the user clicks somewhere
         viewer.addEventListener('click', ({ data }) => {
             if (isEditingMode && !data.rightclick) {
                 const s = `${data.yaw} ${data.pitch}`
@@ -493,10 +597,18 @@
                     tooltip: s,
                     data: {
                         generated: true,
-                    }
+                    },
                 };
+                const yawInDegrees = data.yaw * (180 / Math.PI);
+                const pitchInDegrees = data.pitch * (180 / Math.PI);
+                const viewerCoords = viewer.dataHelper.viewerCoordsToSphericalCoords({
+                        x: data.clientX,
+                        y: data.clientY
+                });
+                    
+                markersPlugin.addMarker( newMarker);                
 
-                markersPlugin.addMarker( newMarker);
+                console.log( "click", yawInDegrees, pitchInDegrees, "vieww", viewerCoords.yaw* (180 / Math.PI), viewerCoords.pitch* (180 / Math.PI) );
                 
                 // Update the editSummary text input with marker information
                 const currentNode = virtualTourPlugin.getCurrentNode();
@@ -504,131 +616,154 @@
                 const editSummary = document.getElementById('editSummary');
                 editSummary.value = `{ node: \"${currentNode.id}\", pitch: ${newMarker.position.pitch}, yaw: ${newMarker.position.yaw}, targetNode: 1 },`;
             }
-
-            /**
-             * Delete a generated marker when the user double-clicks on it
-             * Or change the image if the user right-clicks on it
-             */
-            markersPlugin.addEventListener('select-marker', ({ marker, click, doubleClick, rightClick }) => {
-                if (marker.data?.generated) {
-                    if (isEditingMode && doubleClick) {
-                        markersPlugin.removeMarker(marker);
-                    } else if (isEditingMode && rightClick) {
-                        markersPlugin.updateMarker({
-                            id: marker.id,
-                            image: baseUrl + 'pictos/pin-blue.png',
-                        });
-                        const currentNode = virtualTourPlugin.getCurrentNode();
-                        console.log( currentNode.id, marker.config.position.yaw, marker)
-                    }
-                }
-                if( !isEditingMode && click ) {
-                    console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-                if( !isEditingMode && doubleClick ) {
-                    console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-                if( !isEditingMode && rightClick ) {
-                    if ( marker.data.targetNode ) {
-                        virtualTourPlugin.setCurrentNode( marker.data.targetNode );
-                    }
-                }
-            });
-
-
-        });
-
-
-        viewer.addEventListener('click', ({ data }) => {
-            console.log(`${data.rightclick ? 'right ' : ''}clicked at yaw: ${data.yaw} pitch: ${data.pitch}`);
-            // Log the pan value from sphereCorrection
-            nodeGarden.forEach(node => {
-                console.log(`Node ${node.id} pan: ${node.sphereCorrection.pan} roll: ${node.roll}`);
-     
-            });
-
         });
         
+        /**
+         * Delete a generated marker when the user double-clicks on it
+         * Or change the image if the user right-clicks on it
+         */
+        markersPlugin.addEventListener('select-marker', ({ marker, doubleClick, rightClick }) => {
+            console.log('Marker selected:', marker.data );
 
-        viewer.addEventListener('position-updated', ({ position }) => {
-            //console.log(`new yaw: ${position.yaw} pitch: ${position.pitch} x ${position.offsetX} y ${position.offsetY}` );
-        });
-        
+            if (marker.data?.generated) {
+                if (isEditingMode) {
+                    let isDragging = false;
+                    const onMouseMove = (event) => {
+                        if (isDragging) {
+                            console.log( "dragging",  marker.id  );
+                            const viewerCoords = viewer.dataHelper.viewerCoordsToSphericalCoords({
+                                x: event.clientX,
+                                y: event.clientY
+                            });
+                            const viewerPosition = viewer.getPosition();
+                            markersPlugin.updateMarker({
+                                id: marker.id,
+                                position: { yaw: viewerPosition.yaw, pitch: viewerPosition.pitch },
+                            });
+                            const yawInDegrees = viewerPosition.yaw * (180 / Math.PI);
+                            const pitchInDegrees = viewerPosition.pitch * (180 / Math.PI);
+                            console.log( "drag", yawInDegrees, pitchInDegrees );
+                        }
+                    };
+                    const onMouseUp = () => {
+                        isDragging = false;
+                        console.log( "onMouseUp" );
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+                    const onMouseDown = () => {
+                        isDragging = true;
+                        console.log( "onMouseDown" );
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                    };
+                    document.addEventListener('mousedown', onMouseDown);
+                }
 
-    // Add event listener to export button
-    document.getElementById('exportButton').addEventListener('click', () => {
-        //const json = JSON.stringify(floorGarden, null, 2);
-        const json = JSON.stringify(floorGarden );
-        console.log(json);
-    });
-
-    // Add event listener to export button
-    document.getElementById('exportHotspots').addEventListener('click', () => {
-        const currentNode = virtualTourPlugin.getCurrentNode();
-        const ms = markersPlugin.getMarkers();
-        var index = 1
-        ms.forEach( m => {
-            console.log(`{ node: \"${currentNode.id}\", pitch: ${m.config.position.pitch}, yaw: ${m.config.position.yaw}, targetNode: 1 },`);
-            index += 1;
-        });
-    });
-
-    let isEditingMode = false;
-
-    // Add event listener to the checkbox
-    document.getElementById('editMode').addEventListener('change', (event) => {
-        isEditingMode = event.target.checked;
-    });
-
-    
-    // Switch the set of images being displayed and the set of hotspots
-    document.getElementById('viewFirst').addEventListener('click', () => {
-        if( nodeFirst.length > 0 ) {
-            floorHotspots = floorFirst_hotspots;
-            virtualTourPlugin.setNodes( nodeFirst );
-        }
-    });
-    document.getElementById('viewSecond').addEventListener('click', () => {
-        if( nodeSecond.length > 0 ) {
-            floorHotspots = floorSecond_hotspots;
-            virtualTourPlugin.setNodes( nodeSecond );
-        }
-    });
-    document.getElementById('viewGarden').addEventListener('click', () => {
-
-        if( nodeFirst.length > 0 ) {
-            floorHotspots = floorGarden_hotspots;
-            virtualTourPlugin.setNodes( nodeGarden );
+                if (isEditingMode && doubleClick) {
+                    markersPlugin.removeMarker(marker);
+                } else if (isEditingMode && rightClick) {
+                    markersPlugin.updateMarker({
+                        id: marker.id,
+                        image: baseUrl + 'pictos/pin-blue.png',
+                    });
+                    const currentNode = virtualTourPlugin.getCurrentNode();
+                    console.log( currentNode.id, marker.config.position.yaw, marker)
+                }
+            }
             
+            if( !isEditingMode && !doubleClick ) {
+                console.log( "Navigate:" + marker.id + " -> " + marker.data.targetNode );
+                if ( marker.data.targetNode ) {
+                    virtualTourPlugin.setCurrentNode( marker.data.targetNode );
+                }
+            }
+        });
+
+
+        ///
+        // Subroutine to export configData to a JSON file and download it
+        function downloadConfigData() {
+            const formattedConfigData = configData.map(section => {
+                return {
+                    id: section.id,
+                    nodes: section.nodes.map(node => ({
+                        id: node.id,
+                        image: node.image
+                    })),
+                    hotspots: section.hotspots.map(hotspot => ({
+                        node: hotspot.node,
+                        pitch: hotspot.pitch,
+                        yaw: hotspot.yaw,
+                        targetNode: hotspot.targetNode
+                    }))
+                };
+            });
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formattedConfigData),null,"4");
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "360tour.json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
         }
-    });
 
+        // Subroutine to load configData from a local JSON file
+        function loadConfigData(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
 
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedConfigData = JSON.parse(e.target.result);
+                    // Assuming configData is a global variable
+                    configData.length = 0; // Clear the existing configData
+                    Array.prototype.push.apply(configData, loadedConfigData);
+
+                    console.log("Config data loaded successfully:", configData);
+                    // You can add additional logic here to update the viewer with the new configData
+                } catch (error) {
+                    console.error("Error parsing JSON:", error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Add event listener to export button
+        document.getElementById('exportButton').addEventListener('click', () => {
+            //const json = JSON.stringify(floorGarden, null, 2);
+            const json = JSON.stringify(floorGarden );
+            console.log(json);
+        });
+
+        // Add event listener to export button
+        document.getElementById('exportHotspots').addEventListener('click', () => {
+            const currentNode = virtualTourPlugin.getCurrentNode();
+            const ms = markersPlugin.getMarkers();
+            var index = 1
+            ms.forEach( m => {
+                console.log(`{ node: \"${currentNode.id}\", pitch: ${m.config.position.pitch}, yaw: ${m.config.position.yaw}, targetNode: 1 },`);
+                index += 1;
+            });
+        });
+
+        let isEditingMode = false;
+
+        // Add event listener to the checkbox
+        document.getElementById('editMode').addEventListener('change', (event) => {
+            isEditingMode = event.target.checked;
+        });
     </script>
 
-
-<div>
- <button id="viewGarden" class="ios-button">VIEW Garden</button>
-   <button id="viewFirst" class="ios-button">VIEW First Floor</button>
-   <button id="viewSecond" class="ios-button">VIEW Second Floor</button>
-</div>
-    
-
-<!-- Export button 
- -->
-<button id="exportButton">Export dynNode as JSON</button>
-<button id="exportHotspots">Export hotSpots</button>
-<label for="editMode">edit mode</label>
-<input type="checkbox" id="editMode">
-<input type="text" id="editSummary" style="width:800px" value="">
-<br>
-
+    <button id="exportButton">Export dynNode as JSON</button>
+    <button id="exportHotspots">Export hotSpots</button>
+    <label for="editMode">edit mode</label>
+    <input type="checkbox" id="editMode">
+    <input type="text" id="editSummary" style="width:800px" value="">
 
 </body>
 </html>

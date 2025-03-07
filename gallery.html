@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>360 tours</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin/index.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin/index.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin/index.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.1/index.min.css">
+</head>
+
+<body>
+     <!-- the viewer container must have a defined size -->
+     <div id="viewer" style="width: 98vw; height: 85vh;"></div>
+    
+     <script type="importmap">
+         {
+             "imports": {            
+                 "three" : "https://cdn.jsdelivr.net/npm/three/build/three.module.min.js",
+                 "@photo-sphere-viewer/core" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.12.0/index.module.min.js",
+                 "@photo-sphere-viewer/markers-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.12.0/index.module.min.js",
+                 "@photo-sphere-viewer/gallery-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin@5.12.0/index.module.min.js"
+                 "@photo-sphere-viewer/virtual-tour-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js",
+                 "@photo-sphere-viewer/compass-plugin" : "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js"
+             }
+         }
+     </script>
+
+
+
+
+     <script type="module">
+        
+        import { Viewer } from '@photo-sphere-viewer/core';
+        import { MarkersPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.12.0/index.module.min.js';
+        import { GalleryPlugin } from '@photo-sphere-viewer/gallery-plugin';
+        import { VirtualTourPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js';
+        import { CompassPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js';
+        import { events } from '@photo-sphere-viewer/core';
+
+        const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
+
+        const viewer = new Viewer({
+            container: 'viewer',
+            panorama: baseUrl + 'sphere.jpg',
+            caption: 'Parc national du Mercantour <b>&copy; Damien Sorel</b>',
+            loadingImg: baseUrl + 'loader.gif',
+            touchmoveTwoFingers: true,
+            mousewheelCtrlKey: true,
+
+            plugins: [
+                [GalleryPlugin, {
+                    visibleOnLoad: true,
+                }],
+
+                [MarkersPlugin, {
+                    markers: [
+                        {
+                        id: "video",
+                        position: [ { yaw: 2.90978, pitch: 0.25583 } ],
+                        tooltip: "Play",
+                        },
+                    ],
+                }],
+        });
+
+        const gallery = viewer.getPlugin(GalleryPlugin);
+
+        gallery.setItems([
+            {
+                id: 'sphere',
+                panorama: baseUrl + 'sphere.jpg',
+                thumbnail: baseUrl + 'sphere-small.jpg',
+                options: {
+                    caption: 'Parc national du Mercantour <b>&copy; Damien Sorel</b>',
+                },
+            },
+            {
+                id: 'sphere-test',
+                panorama: baseUrl + 'sphere-test.jpg',
+                name: 'Test sphere',
+            },
+            {
+                id: 'key-biscayne',
+                panorama: baseUrl + 'tour/key-biscayne-1.jpg',
+                thumbnail: baseUrl + 'tour/key-biscayne-1-thumb.jpg',
+                name: 'Key Biscayne',
+                options: {
+                    caption: 'Cape Florida Light, Key Biscayne <b>&copy; Pixexid</b>',
+                },
+            },
+        ]);
+
+        viewer.addEventListener('dblclick', ({ data }) => {
+            console.log('double');
+            viewer.animate({
+                yaw: data.yaw,
+                pitch: data.pitch,
+                zoom: 100,
+                speed: 1000,
+            });
+        });
+
+        viewer.addEventListener('click', ({ data }) => {
+            console.log('click ${data.yaw} ${data.pitch}');
+        });
+
+        viewer.addEventListener('gallery-open', ({ data }) => {
+            console.log('gallery open');
+        });
+
+        viewer.addEventListener('ready', ({ data }) => {
+            console.log('ready');
+        });
+
+        
+        viewer.addEventListener('transition-done', ({ data }) => {
+            console.log('transition-done');
+        });
+
+        // Add view event listener to output all events to the console
+        viewer.addEventListener('', (event) => {
+            console.log('View event:', event);
+        });
+
+    // Listen for the 'gallery-select' event when an image is selected
+    viewer.addEventListener('gallery-select', (event) => {
+        console.log('Gallery item selected:', event);
+    });
+
+    </script>
+
+Gallery HTML
+</body>
+

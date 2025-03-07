@@ -156,8 +156,6 @@
                     selectedFloor = 0;
                     virtualTourPlugin.setNodes( nodeData[0] );            
                 }
-                setNavigationBar( );
-
             })
             .catch(error => {
                 const e = "Error loading configuration.\n" + error.name + "\n" + error.message;
@@ -181,7 +179,7 @@
         let  configData = [ ];
         let  nodeData = [ ];
         
-        // Unique identifier for new markers
+        // New markers have an identifier
         var newMarkerId = 100;
         
         // Create an input element for file selection
@@ -189,7 +187,7 @@
         fileinputElement.type = 'file';
         fileinputElement.accept = '.json';
 
-        // FILE load event listener to handle 
+        // Add an event listener to handle file selection for upload 
         fileinputElement.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -198,14 +196,82 @@
             }
         });
 
-        // 
-        // MAIN 360 degree viewer
-        //
+        // Main 360 viewer
         const viewer = new Viewer({
             container: document.querySelector('#viewer'),
             panorama: `image1.jpg`,
             caption: pageCaption,
-            navbar:  [], 
+
+            navbar: [
+                'zoom',
+                'gallery',
+                {
+                    id: 'fileload',
+                    content: "<button id='load'>Load</button>",
+                    title: 'load',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        fileinputElement.click();
+                    },
+                },
+                {
+                    id: 'save',
+                    content: "<button id='save'>Save</button>",
+                    title: 'Save',
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        saveConfigData();
+                    },
+                },
+               
+                {
+                      id: 'floorDescription',
+                        content: "Choose a floor", 
+                        title: 'choose',
+                        className: 'custom-button',
+                },
+                // TODO fix to dynamically define based on loaded json floors
+                {
+                    id: "0", // configData[0].id,
+                    content:  "0", // configData[0].id,
+                    title:  "0", // configData[0].id,
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        selectedFloor = 0;
+                        if( configData[selectedFloor].nodes.length > 0 ) {
+                            virtualTourPlugin.setNodes( nodeData[selectedFloor] );            
+                        }
+                    },
+                },
+                {
+                    id: "1", // configData[1].id,
+                    content: "1", // configData[1].id,
+                    title: "1", // configData[1].id,
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        selectedFloor = 1;
+                        if( configData[selectedFloor].nodes.length > 0 ) {
+                            virtualTourPlugin.setNodes( nodeData[selectedFloor] );  
+                        }
+                   },
+                },
+                {
+                    id: "2", // configData[2].id,
+                    content: "2", // configData[2].id,
+                    title: "2", // configData[2].id,
+                    className: 'custom-button',
+                    onClick(viewer) {
+                        selectedFloor = 2;
+                        if( configData[selectedFloor].nodes.length > 0 ) {
+                            virtualTourPlugin.setNodes( nodeData[selectedFloor] );
+                        }
+                    },
+                },
+                'caption',
+                'description',
+                'fullscreen',
+            ],
+
             plugins: [
                 [MarkersPlugin, {} ],
                 [GalleryPlugin, {}],
@@ -224,90 +290,32 @@
             ],
         });
 
-        // 
-        // GLOBALS 
-        //
-        let selectedNode = null;
+
         let selectedMarker = null;
+        let selectedNode = null;
         let isEditingMode = false;  // Allows create, delete and edit of hotstpos
     
+        // Remember the markers and tour plugins
         const markersPlugin = viewer.getPlugin(MarkersPlugin);
         markersPlugin.setOptions({
             clickEventOnMarker: true,
         });
+
         const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
   
+
+
         // Load default configuration of photos and click nodes
+        //const configDataUrl = 'greenlands.json';
         const configDataUrl = 'greenlands-short.json';
         await loadConfigDataFromUrl(configDataUrl);
 
-  
-
-        //
-        // NAVIGATION BAR
-        //
-        function setFloor( floor ) {
-            // FLOOR change
-            selectedFloor = floor;
-            if( configData[selectedFloor].nodes.length > 0 ) {
-                virtualTourPlugin.setNodes( nodeData[selectedFloor] );            
-            }
-        }
-
-        function setNavigationBar( ) {
-            var dynnav = [];
-            dynnav.push( 'zoom' );
-            dynnav.push( 'gallery' );    
-            dynnav.push( {
-                id: 'fileload',
-                content: "<button id='load'>Load</button>",
-                title: 'Load',
-                className: 'custom-button',
-                onClick(viewer) { fileinputElement.click(); },
-            }); 
-            dynnav.push( {
-                id: 'save',
-                content: "<button id='save'>Save</button>",
-                title: 'Save',
-                className: 'custom-button',
-                onClick(viewer) { saveConfigData(); },
-            });
-            dynnav.push( {
-                id: 'floor',
-                content: "Choose a floor", 
-            });
-
-            // Create floor buttons dynamically based on configData
-            for (let i = 0; i < configData.length; i++) {
-                dynnav.push({
-                    id: configData[i].id,
-                    content: configData[i].id,
-                    title: `Choose Floor`,
-                    className: 'custom-button',
-                    onClick(viewer) { 
-                        setFloor(i); 
-                    },
-                });
-            }
-            
-            dynnav.push(  'caption' );
-            dynnav.push( 'description' );
-            dynnav.push( 'fullscreen' );
-                    
-            viewer.navbar.setButtons( dynnav );
-        }
-
-
-
-        // 
-        // NODE CHANGED reload new markers when the node (the picture being displayed) changes
-        // 
+        // Reload new markers when the node (the picture being displayed) changes
         virtualTourPlugin.addEventListener('node-changed', ({ node }) => {
             
             if( ! isEditingMode ) {
                 console.log( "node-changed", node.id );
                 selectedNode = node.id;
-                selectedMarker = null;
                 // Change to the node's marker's 
                 markersPlugin.clearMarkers();       
                 configData[selectedFloor].hotspots.forEach(hotspot => {
@@ -329,6 +337,8 @@
                 });
             }     
         });
+
+
 
         //
         // VIEWER events
@@ -358,6 +368,8 @@
 
                 // CREATE new edit marker
                 console.log( "viewer click - new edit marker")
+                // const s = `${data.yaw} ${data.pitch}`;
+
             
                 const tooltip = tooltipGet( 0 ); // tooltip for new edit marker
                 const mId = '#' + newMarkerId.toString();
@@ -365,10 +377,11 @@
                     id: mId,
                     position: { yaw: data.yaw, pitch: data.pitch },
                     image: baseUrl + 'pictos/pin-blue.png',
-                    size: { width: 48, height: 48 },
+                    size: { width: 32, height: 32 },
                     anchor: 'bottom center',
                     tooltip: {
-                        content: "Select target location", 
+                        content: "Select target", 
+                        className: 'custom-tooltip',
                         position: 'top',
                     },
                     data: {
@@ -414,7 +427,7 @@
                 }
                 else if (marker.data?.generated == false) {
                     // SELECTED marker not created by user
-                    console.log ('markers select-marker - not user generated', marker.id);
+                    console.log ('markers select-marker - not user generated', selectedMarker.id);
                 }
                 else {  
                     // DESELECTED any previously selected marker and update the targetNode
@@ -447,6 +460,7 @@
                         content: selectedMarker.nodeId,  
                         tooltip: {
                             content:  marker.data.targetNode, 
+                            className: 'custom-tooltip',
                             position: 'top',
                         },
                     });
@@ -578,6 +592,8 @@
                 index += 1;
             });
         });
+
+  
 
         // Add event listener to the checkbox
         document.getElementById('editMode').addEventListener('change', (event) => {

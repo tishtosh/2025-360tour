@@ -151,31 +151,39 @@
                 response.json()
             )
             .then(loadedConfigData => {
-                configData.length = 0; // Clear the existing configData
+                // Clear and reset 
+                resetOnLoad();  
+                viewer.panel.hide();  // Default editing mode off on load
+
+                //configData.length = 0; // Clear the existing configData
                 Array.prototype.push.apply(configData, loadedConfigData);
                 console.log("Config data loaded successfully from URL:", configData);
-                nodeData = [ // HARDWIRED for 3 floors
-                    configData[0].nodes.map(location => getNode3(location.id, location.image)),
-                    configData[1].nodes.map(location => getNode3(location.id, location.image)),
-                    configData[2].nodes.map(location => getNode3(location.id, location.image))
-                ];
 
-                // Assign IDs ignoring those loaded to ensure uniqueness
-                configData[0].hotspots.forEach(hotspot => {
-                    hotspot.id = '#' +newMarkerId.toString();
-                    newMarkerId += 1;
-                });
+                //nodeData = [ // HARDWIRED for 3 floors
+                //    configData[0].nodes.map(location => getNode3(location.id, location.image)),
+                //    configData[1].nodes.map(location => getNode3(location.id, location.image)),
+                //    configData[2].nodes.map(location => getNode3(location.id, location.image))
+                //];
 
+                // Create nodeData for each floor
+                for (let floor = 0; floor < configData.length; floor++) {
+                    nodeData.push( configData[ floor ].nodes.map( location => getNode3( location.id, location.image )));
+                }                
+                // Assign IDs to hotspots loaded to ensure uniqueness
+                for (let floor = 0; floor < configData.length; floor++) {
+                    configData[floor].hotspots.forEach(hotspot => {
+                        hotspot.id = '#' +newMarkerId.toString();
+                        newMarkerId += 1;
+                    });
+                }
+                
                 selectedFloor = 0;
                 if( configData[selectedFloor].nodes.length > 0 ) {
                     console.log( "load complete - select", configData[selectedFloor].id, nodeData[selectedFloor][0].id, nodeData[selectedFloor][0]  );
                     virtualTourPlugin.setNodes( nodeData[selectedFloor] )
                     virtualTourPlugin.setCurrentNode(   nodeData[selectedFloor][0].id  );       
                 }
-                setNavigationBar( );
-                selectedNode = null;
-                selectedMarker = null;
-                isEditingMode = false; 
+                setNavigationBar( );               
             })
             .catch(error => {
                 const e = "Error loading configuration.\n" + error.name + "\n" + error.message;
@@ -203,6 +211,15 @@
         
         // Unique identifier for new markers
         var newMarkerId = 100;
+
+        function resetOnLoad() {
+            selectedFloor = -1;
+            selectedNode = null;
+            selectedMarker = null;
+            isEditingMode = false;
+            configData.length = 0;
+            nodeData.length = 0;
+        }
         
         // LOAD file selection input and handler
         const fileinputElement = document.createElement('input');
@@ -217,20 +234,7 @@
             }
         });
 
-        // 
-        // GLOBALS and load default dat
-        //
-        const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
-        const markersPlugin = viewer.getPlugin(MarkersPlugin);
-        markersPlugin.setOptions({
-            clickEventOnMarker: true,
-        });
-  
-        // Load default configuration of photos and click nodes
-        const configDataUrl = 'greenlands-short.json';
-        await loadConfigDataFromUrl(configDataUrl);
-
-
+      
         // 
         // MAIN 360 degree viewer
         //
@@ -258,15 +262,31 @@
             ],
         });
 
+        // 
+        // GLOBALS and load default dat
+        //
+        const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
+        const markersPlugin = viewer.getPlugin(MarkersPlugin);
+        markersPlugin.setOptions({
+            clickEventOnMarker: true,
+        });
+  
+        // Load default configuration of photos and click nodes
+        const configDataUrl = 'greenlands-short.json';
+        await loadConfigDataFromUrl(configDataUrl);
+
+
 
         //
         // NAVIGATION BAR
         //
         function setFloor( floor ) {
-            // FLOOR change
+            // FLOOR change set the nodes (images) and the markers
             selectedFloor = floor;
+            selectedMarker = null;
             if( configData[selectedFloor].nodes.length > 0 ) {
-                virtualTourPlugin.setNodes( nodeData[selectedFloor] );            
+                virtualTourPlugin.setNodes( nodeData[selectedFloor] );
+                virtualTourPlugin.setCurrentNode( nodeData[selectedFloor][0].id  );       
             }
         }
 
@@ -511,10 +531,11 @@
 
             // Set the current target node
             if( targetNodeId ) {
-                tooltip.value = targetNodeId;   
+                tooltipSetSelected( targetNodeId );
             }
             else {
-                tooltip.selectedItem = 0;
+                tooltipSetSelected( 0 );
+                // tooltip.selectedItem = 0;
             }
             return tooltip;
         }
@@ -545,12 +566,28 @@
             }
         });
 
+        // Set the edit box to match with a preview image
+        function tooltipSetSelected( value ) {
+            const selectElement = document.getElementById('tooltip-content-list'); 
+            if( selectElement ) {
+                selectElement.value = value;
+                const imageElement = document.getElementById('tooltip-content-image');
+                if( imageElement ) {
+                    var s = configData[selectedFloor].nodes.find(node => node.id === value);
+                    if( s && selectedNode ) {
+                        imageElement.src = s.image;
+                    }
+                    else {
+                        imageElement.src = "";
+                    }
+                }
+            }
+        }
 
         // Get the HTML tooltip listbox selected item`
         function tooltipGetSelected( ) {
-            const selectElement = document.getElementById('tooltip-content-list'); 
+            const selectElement = document.getElementById('tooltip-content-list');
             if( selectElement ) {
-                //console.log( "tooltipGetSelected ", selectElement.value );
                 return selectElement.value;
             }
             return null;
@@ -563,6 +600,7 @@
         // CHANGE selected marker destination node
         window.onClickTargetNode = (event) => {
             const selectedValue = tooltipGetSelected();
+            tooltipSetSelected( selectedValue );            // update preview image
             console.log('HTML select list clicked', selectedValue);
             if( selectedMarker ) {
                 markersPlugin.updateMarker({
@@ -621,12 +659,14 @@
             <p>Click on a marker to change the navigation target when clicked.</p>
             <p>Double click on a marker to delete it.</p>
             <p>Click on the marker to navigate to the target node.</p>
-            
         <div>
             <select id="tooltip-content-list" name="options" size="10" style="width: 300px;"
                  onclick="onClickTargetNode(event);">
                 <option value="1">-Select a marker-</option>
             </select>
+        </div>
+        <div>
+            <image id="tooltip-content-image" name="preview" style="width: 300px; height: 200px;"/>
         </div>
         <p>Click on the "Save" button to save the current configuration.</p>
         <p>Click on the "Load" button to a configuration.</p>

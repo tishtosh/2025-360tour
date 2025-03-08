@@ -66,12 +66,6 @@
     "hotspots": [
       {
         "node": "Greenhouse",
-        "pitch": -0.07713795834857917,
-        "yaw": 6.183194912236688,
-        "targetNode": "Bluebucket"
-      },
-      {
-        "node": "Greenhouse",
         "pitch": -0.23410251958825024,
         "yaw": 6.073722411655052,
         "targetNode": "Step"
@@ -305,12 +299,6 @@
         "targetNode": "Patio-window"
       },
       {
-        "node": "Backdoor",
-        "pitch": -0.3510334090097589,
-        "yaw": 3.3307136938124353,
-        "targetNode": "Planters"
-      },
-      {
         "node": "Patio-window",
         "pitch": -0.2802068528591457,
         "yaw": 3.2358625986183562,
@@ -333,6 +321,90 @@
         "pitch": -0.25539266800585114,
         "yaw": 4.119284893421629,
         "targetNode": "Planters"
+      },
+      {
+        "node": "Rotary",
+        "pitch": -0.15865923417576977,
+        "yaw": 0.4543620981634465,
+        "targetNode": "Patio-window"
+      },
+      {
+        "node": "Rotary",
+        "pitch": -0.33319403800561753,
+        "yaw": 1.0651350249228717,
+        "targetNode": "Trellis"
+      },
+      {
+        "node": "Rotary",
+        "pitch": -0.14788934836001455,
+        "yaw": 1.0141121748185105,
+        "targetNode": "Living-room"
+      },
+      {
+        "node": "Backdoor",
+        "pitch": -0.24483070926923212,
+        "yaw": 3.5912851689579717,
+        "targetNode": "Rotary"
+      },
+      {
+        "node": "Patio-window",
+        "pitch": -0.16546650725892742,
+        "yaw": 4.116559760020582,
+        "targetNode": "Rotary"
+      },
+      {
+        "node": "Backdoor",
+        "pitch": -0.19161132518473933,
+        "yaw": 2.567705724108593,
+        "targetNode": "Bird-feeder"
+      },
+      {
+        "node": "Planters",
+        "pitch": -0.5276584937775852,
+        "yaw": 4.007850347638085,
+        "targetNode": "Rotary"
+      },
+      {
+        "node": "Rotary",
+        "pitch": -0.15063790177210445,
+        "yaw": 1.8164664071535341,
+        "targetNode": "Wood-bench"
+      },
+      {
+        "node": "Wood-bench",
+        "pitch": -0.06202256521583993,
+        "yaw": 5.354678779382591,
+        "targetNode": "Rotary"
+      },
+      {
+        "node": "Living-room",
+        "pitch": -0.1899421765730407,
+        "yaw": 2.5610496879550775,
+        "targetNode": "Wood-bench"
+      },
+      {
+        "node": "Wood-bench",
+        "pitch": -0.16955756675761768,
+        "yaw": 0.35264338926619454,
+        "targetNode": "Bluebucket"
+      },
+      {
+        "node": "Wood-bench",
+        "pitch": -0.08400967283729788,
+        "yaw": 0.2958171147472317,
+        "targetNode": "Garage"
+      },
+      {
+        "node": "Greenhouse",
+        "pitch": -0.015901587095457526,
+        "yaw": 0.052732219680885366,
+        "targetNode": "Garage"
+      },
+      {
+        "node": "Greenhouse",
+        "pitch": -0.08640520241461691,
+        "yaw": 0.03371002963688318,
+        "targetNode": "Bluebucket"
       }
     ]
   },
@@ -622,6 +694,18 @@
         "pitch": -0.38202725430674267,
         "yaw": 1.5136798611052864,
         "targetNode": "Living-front"
+      },
+      {
+        "node": "Living-patio",
+        "pitch": -0.2668253487580128,
+        "yaw": 6.048751323003374,
+        "targetNode": "Living-fireplace"
+      },
+      {
+        "node": "Living-fireplace",
+        "pitch": -0.35774847175911084,
+        "yaw": 2.281288021063161,
+        "targetNode": "Hall-doors"
       }
     ]
   },

@@ -108,13 +108,12 @@
         // use  exiftool -XMP-GPano:PoseHeadingDegrees="290.0" 162430.jpg 
         
         import * as THREE from 'three';
-        import { Viewer } from '@photo-sphere-viewer/core';
-        import { MarkersPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.12.0/index.module.min.js';
-        import { GalleryPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin@5.12.0/index.module.min.js';
-        import { VirtualTourPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js';
-        import { CompassPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js';
-        
-        //const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
+        import { Viewer } from '@photo-sphere-viewer/core';        
+        import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
+        import { GalleryPlugin } from '@photo-sphere-viewer/gallery-plugin';
+        import { VirtualTourPlugin } from '@photo-sphere-viewer/virtual-tour-plugin';
+        import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin';
+
         const pageCaption = '360 Photo Tour';
         const markerAnchor = 'center center';  // 'bottom center',
         const markerSize = { width: 96, height: 96 }
@@ -631,7 +630,7 @@
                 };
             });
 
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formattedConfigData),null,"4");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formattedConfigData,null,4));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "360tour.json");
@@ -647,7 +646,7 @@
             <p>Right click on the map to add a marker.</p>
             <p>Click on a marker to change the navigation target when clicked.</p>
             <p>Double click on a marker to delete it.</p>
-            <p>Click on the marker to navigate to the target node.</p>
+            <p>Click on the marker to navigate to load the target node.</p>
         <div>
             <select id="tooltip-content-list" name="options" size="10" style="width: 300px;"
                  onclick="onClickTargetNode(event);">

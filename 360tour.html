@@ -108,23 +108,21 @@
     <script type="module">
         // use  exiftool -XMP-GPano:PoseHeadingDegrees="290.0" 162430.jpg 
         
+        import * as THREE from 'three';
         import { Viewer } from '@photo-sphere-viewer/core';
         import { MarkersPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.12.0/index.module.min.js';
         import { GalleryPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/gallery-plugin@5.12.0/index.module.min.js';
         import { VirtualTourPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/virtual-tour-plugin@5.12.0/index.module.min.js';
         import { CompassPlugin } from 'https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin@5.12.0/index.module.min.js';
         
-        const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
-        const pageCaption = 'Greenlands Drive';
-
-        // const markerIsActive = baseUrl + 'pictos/pin-blue.png';
+        //const baseUrl = 'https://photo-sphere-viewer-data.netlify.app/assets/';
+        const pageCaption = '360 Photo Tour';
         const markerAnchor = 'center center';  // 'bottom center',
-
+        const markerSize = { width: 96, height: 96 }
         const markerIsActive = "arrow-whitecircle.svg";
         const markerIsNotActive = "arrow-whitecircle.svg"; 
-        const markerIsEditing =  "arrow-red.svg"; 
+        const markerIsEditing = "arrow-red.svg"; // "arrow.stl"; 
         
-
         // get GPS offset in feet from a hardwired location
         const getGPS = ( feetx, feety, feetz ) => {
             const feetToMeters = (feet) => feet * 0.3048;
@@ -147,26 +145,25 @@
 
         // 
         // LOAD photos and click nodes from JSON file 
-        //
+        // [{ id:       "Garden", 
+        //      nodes:    [ { "id": "Greenhouse", "image": "xxx.jpg" } ], 
+        //      hotspots: [  { "node": "Greenhouse", "pitch": -0.01, "yaw": 6.1, "targetNode": "Bluebucket" } ] } 
+        //  { id: "First", nodes: floorFirst, hotspots: floorFirst_hotspots },
+        //  { id: "Second", nodes: floorSecond, hotspots: floorSecond_hotspots }
+        // ]
+
         async function loadConfigDataFromUrl(configDataUrl) {
             fetch(configDataUrl)
             .then(response => 
                 response.json()
             )
             .then(loadedConfigData => {
-                // Clear and reset 
-                resetOnLoad();  
-                viewer.panel.hide();  // Default editing mode off on load
-
-                //configData.length = 0; // Clear the existing configData
+                // LOAD
+                resetOnLoad();        // Clear and reset 
+                viewer.panel.hide();  // Edit mode off so panel closed
+                
                 Array.prototype.push.apply(configData, loadedConfigData);
                 console.log("Config data loaded successfully from URL:", configData);
-
-                //nodeData = [ // HARDWIRED for 3 floors
-                //    configData[0].nodes.map(location => getNode3(location.id, location.image)),
-                //    configData[1].nodes.map(location => getNode3(location.id, location.image)),
-                //    configData[2].nodes.map(location => getNode3(location.id, location.image))
-                //];
 
                 // Create nodeData for each floor
                 for (let floor = 0; floor < configData.length; floor++) {
@@ -180,13 +177,14 @@
                     });
                 }
                 
+                // Load complete selected first floor from json
                 selectedFloor = 0;
                 if( configData[selectedFloor].nodes.length > 0 ) {
                     console.log( "load complete - select", configData[selectedFloor].id, nodeData[selectedFloor][0].id, nodeData[selectedFloor][0]  );
                     virtualTourPlugin.setNodes( nodeData[selectedFloor] )
                     virtualTourPlugin.setCurrentNode(   nodeData[selectedFloor][0].id  );       
                 }
-                setNavigationBar( );               
+                setNavigationBar( );        
             })
             .catch(error => {
                 const e = "Error loading configuration.\n" + error.name + "\n" + error.message;
@@ -195,14 +193,9 @@
             });
         }
         
-        //Format of the JSON file
-        // [{ id:       "Garden", 
-        //      nodes:    [ { "id": "Greenhouse", "image": "xxx.jpg" } ], 
-        //      hotspots: [  { "node": "Greenhouse", "pitch": -0.01, "yaw": 6.1, "targetNode": "Bluebucket" } ] } 
-        //  { id: "First", nodes: floorFirst, hotspots: floorFirst_hotspots },
-        //  { id: "Second", nodes: floorSecond, hotspots: floorSecond_hotspots }
-        // ]
-        
+        //
+        // GLOBALS and defaults
+        //
         var selectedFloor = -1;
         let selectedNode = null;
         let selectedMarker = null;
@@ -266,7 +259,7 @@
         });
 
         // 
-        // GLOBALS and load default dat
+        // GLOBALS and defaults
         //
         const virtualTourPlugin = viewer.getPlugin(VirtualTourPlugin);
         const markersPlugin = viewer.getPlugin(MarkersPlugin);
@@ -275,25 +268,8 @@
         });
   
         // Load default configuration of photos and click nodes
-        //const configDataUrl = 'greenlands-short.json';
-        const configDataUrl = 'greenlands.json';
+        const configDataUrl = 'greenlands.json';    //  'greenlands-short.json';
         await loadConfigDataFromUrl(configDataUrl);
-
-        // TEST meshes
-        //const geometry = new THREE.BoxGeometry(5.0, 1.0, 0.5);
-        // Create a material with red color
-        //const material = new THREE.MeshLambertMaterial({
-        //    color: 0xff0000,       // Red color
-        //    emissive: 0x000000,    // No self-illumination
-        //    side: THREE.DoubleSide // Render both sides of faces
-        //});
-
-        // Apply to a mesh
-        //const cube = new THREE.Mesh(geometry, material);
-        //const renderer = viewer.renderer;
-        //const scene = renderer.scene;
-        // scene.add(cube);
-        
 
         //
         // NAVIGATION BAR
@@ -364,20 +340,20 @@
                 markersPlugin.clearMarkers();       
                 configData[selectedFloor].hotspots.forEach(hotspot => {
                     if (hotspot.node === node.id) {
-                        markersPlugin.addMarker({
+                        const newMarker = {
                             id: hotspot.id, 
+                            size: markerSize, 
                             position: { yaw: hotspot.yaw, pitch: hotspot.pitch },
-                            // rotation: { pitch: -1.0, yaw: Math.PI/2 }, // Added yaw rotation of 90 degrees
-                            image: markerIsActive, 
-                            size: { width: 64, height: 64 },
                             anchor: markerAnchor,
+                            imageLayer: markerIsActive,  // image: 
+                            rotation: { pitch: Math.PI / 2, yaw: 0, roll: 0.0  }, 
                             tooltip: hotspot.targetNode,   // name of node to navigate to
                             data: {
-                                generated: false,     // node was not generated by user
                                 targetNode: hotspot.targetNode,
                                 nodeId: node.id,       
                             },
-                        });
+                        };
+                        markersPlugin.addMarker( newMarker );
                     }
                 });
             }
@@ -397,16 +373,11 @@
                     
                     markersPlugin.updateMarker({
                         id: selectedMarker.id,
-                        image: markerIsNotActive, 
+                        imageLayer: markerIsNotActive,  // image: markerIsNotActive, 
                         data: {
                             targetNode: selectedValue,
                         },
                     });
-
-                    // Update the hotspot marker with the targetNode
-                    //const marker = configData[selectedFloor].hotspots.find(hotspot => hotspot.id === selectedMarker.id )
-                    // marker.targetNode = selectedValue;
-
                     selectedMarker = null;
                 }
 
@@ -418,16 +389,16 @@
                 newMarkerId += 1;
                 const newMarker = {
                     id: mId,
+                    size: markerSize,
                     position: { yaw: data.yaw, pitch: data.pitch },
-                    image: markerIsEditing,
-                    size: { width: 48, height: 48 },
+                    imageLayer: markerIsEditing,  // image: 
+                    rotation: { pitch: Math.PI / 2, yaw: 0, roll: 0.0  }, 
                     anchor: markerAnchor, 
                     tooltip: {
                         content: "Select target location", 
                         position: 'top',
                     },
                     data: {
-                        generated: true,
                         targetNode: "-unassigned-",
                     },
                 };
@@ -472,7 +443,7 @@
                         console.log("markers select-marker - DESELECT", selectedMarker.id, selectedValue);                        
                         markersPlugin.updateMarker({
                             id: selectedMarker.id,
-                            image: markerIsActive, 
+                            imageLayer: markerIsActive, 
                             content: selectedMarker.id,
                             data: {
                                 targetNode: selectedValue,
@@ -487,7 +458,7 @@
                     const tooltip = tooltipGet( marker.data.targetNode );                   
                     markersPlugin.updateMarker({
                         id: selectedMarker.id,
-                        image: markerIsEditing, // baseUrl + 'pictos/pin-blue.png',
+                        imageLayer: markerIsEditing,
                         content: selectedMarker.nodeId,  
                         tooltip: {
                             content:  marker.data.targetNode, 
@@ -511,7 +482,7 @@
                 selectedMarker = marker
                 markersPlugin.updateMarker({
                     id: marker.id,
-                    image: markerIsActive, 
+                    imageLayer: markerIsActive, 
                 });
             }
             
@@ -579,7 +550,7 @@
                 if( selectedMarker ) {
                     markersPlugin.updateMarker({
                         id: selectedMarker.id,
-                        image: markerIsNotActive, 
+                        imageLayer: markerIsNotActive, 
                     });
                     selectedMarker = null;
                 }
@@ -625,7 +596,7 @@
             if( selectedMarker ) {
                 markersPlugin.updateMarker({
                     id: selectedMarker.id,
-                    image: markerIsEditing, 
+                    imageLayer: markerIsEditing, 
                     data: {
                         targetNode: selectedValue,
                     },

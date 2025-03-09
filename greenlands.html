@@ -118,9 +118,9 @@
         const pageCaption = '360 Photo Tour';
         const markerAnchor = 'center center';  // 'bottom center',
         const markerSize = { width: 96, height: 96 }
-        const markerIsActive = "arrow-whitecircle.svg";
-        const markerIsNotActive = "arrow-whitecircle.svg"; 
-        const markerIsEditing = "arrow-red.svg"; // "arrow.stl"; 
+        const markerIsActive = "images/circle-white.svg";
+        const markerIsNotActive = "images/circle-white.svg"; 
+        const markerIsEditing = "images/circle-red.svg"; 
         
         // get GPS offset in feet from a hardwired location
         const getGPS = ( feetx, feety, feetz ) => {
@@ -235,7 +235,7 @@
         //
         const viewer = new Viewer({
             container: document.querySelector('#viewer'),
-            // panorama: `image1.jpg`,
+            panorama: `image1.jpg`,
             caption: pageCaption,
             navbar:  [], 
             description: document.querySelector('#description').innerHTML,
@@ -525,7 +525,6 @@
             }
             else {
                 tooltipSetSelected( 0 );
-                // tooltip.selectedItem = 0;
             }
             return tooltip;
         }
